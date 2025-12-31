@@ -218,9 +218,9 @@ def main():
     st.markdown("""
     This dashboard visualizes market volatility regimes by classifying rolling volatility 
     into three categories:
-    - **Low Volatility**: Bottom 33% of volatility distribution
-    - **Medium Volatility**: Middle 33%
-    - **High Volatility**: Top 33%
+    - 🟢 **Low Volatility**: Bottom 33% of volatility distribution
+    - 🟡 **Medium Volatility**: Middle 33%
+    - 🔴 **High Volatility**: Top 33%
     
     The background shading indicates the current volatility regime, helping identify 
     periods of market stability versus turbulence.
@@ -276,16 +276,6 @@ def main():
         
         fig = plot_regimes(prices, regimes)
         st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("---")
-        st.markdown("### Legend")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown("🟢 **Low Volatility**: Bottom 33% of volatility")
-        with col2:
-            st.markdown("🟡 **Medium Volatility**: Middle 33%")
-        with col3:
-            st.markdown("🔴 **High Volatility**: Top 33%")
         
         st.markdown("---")
         st.caption(f"Data range: {prices.index[0].strftime('%Y-%m-%d')} to {prices.index[-1].strftime('%Y-%m-%d')} | "
