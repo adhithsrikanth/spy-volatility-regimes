@@ -326,7 +326,7 @@ def main():
     
     # Manual refresh button
     st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 Refresh Data", help="Clear cache and reload data from Yahoo Finance"):
+    if st.sidebar.button("Refresh Data", help="Clear cache and reload data from Yahoo Finance"):
         st.cache_data.clear()
         st.sidebar.success("Cache cleared! Data will be reloaded.")
         st.rerun()
@@ -344,15 +344,6 @@ def main():
     periods of market stability versus turbulence.
     """)
     
-    # Info about rate limiting
-    with st.expander("ℹ️ About Rate Limiting & Caching"):
-        st.info(
-            "**Caching:** Data is cached for 6 hours to minimize API calls and reduce rate limiting. "
-            "Use the '🔄 Refresh Data' button in the sidebar to manually reload fresh data.\n\n"
-            "**Rate Limiting:** If you see rate limit errors, please wait 1-2 minutes before trying again. "
-            "The app automatically retries with exponential backoff."
-        )
-    
     # Load and process data
     if ticker:
         # Use a placeholder to show loading state
@@ -360,7 +351,8 @@ def main():
         
         with status_placeholder.container():
             with st.spinner(f"Loading data for {ticker}..."):
-                prices = load_data(ticker)
+                # Ensure cache is keyed by ticker - pass ticker explicitly
+                prices = load_data(ticker=ticker)
         
         # Clear any previous error messages
         status_placeholder.empty()
@@ -385,6 +377,8 @@ def main():
         # Display summary statistics
         stats = get_regime_stats(regimes)
         
+        # Show ticker in header to confirm it's updating
+        st.markdown(f"### Statistics for {ticker}")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric(
@@ -404,6 +398,12 @@ def main():
                 f"{stats['High']['count']} days",
                 f"{stats['High']['percentage']:.1f}%"
             )
+        
+        # Note about percentages (they'll always be ~33% due to percentile classification)
+        st.info(
+            f"💡 **Note:** Percentages are always ~33% each because regimes are classified using percentiles "
+            f"(bottom 33%, middle 33%, top 33%). The day counts vary by ticker based on available data."
+        )
         
         # Create and display plot
         fig = plot_regimes(prices, regimes)
