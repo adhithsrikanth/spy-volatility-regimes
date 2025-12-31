@@ -192,6 +192,63 @@ def get_regime_stats(regimes):
     return stats
 
 
+def compute_transition_matrix(regimes):
+    regimes_clean = regimes.dropna()
+    if len(regimes_clean) < 2:
+        return None
+    
+    current_regimes = regimes_clean[:-1].values
+    next_regimes = regimes_clean[1:].values
+    
+    transition_df = pd.DataFrame({
+        'From': current_regimes,
+        'To': next_regimes
+    })
+    
+    transition_matrix = pd.crosstab(
+        transition_df['From'],
+        transition_df['To'],
+        normalize='index'
+    )
+    
+    regime_order = ['Low', 'Medium', 'High']
+    transition_matrix = transition_matrix.reindex(
+        index=regime_order,
+        columns=regime_order,
+        fill_value=0
+    )
+    
+    return transition_matrix
+
+
+def plot_transition_heatmap(transition_matrix):
+    fig = go.Figure(data=go.Heatmap(
+        z=transition_matrix.values,
+        x=transition_matrix.columns,
+        y=transition_matrix.index,
+        colorscale='Blues',
+        text=transition_matrix.values,
+        texttemplate='%{text:.1%}',
+        textfont={"size": 14},
+        colorbar=dict(title="Probability", tickformat='.0%')
+    ))
+    
+    fig.update_layout(
+        title={
+            'text': 'Regime Transition Probability Matrix',
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 16, 'color': 'black'}
+        },
+        xaxis_title='To Regime',
+        yaxis_title='From Regime',
+        height=400,
+        yaxis=dict(autorange='reversed')
+    )
+    
+    return fig
+
+
 def main():
     st.sidebar.header("Settings")
     
@@ -276,6 +333,23 @@ def main():
         
         fig = plot_regimes(prices, regimes)
         st.plotly_chart(fig, use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("### Regime Transition Matrix")
+        
+        transition_matrix = compute_transition_matrix(regimes)
+        
+        if transition_matrix is not None:
+            heatmap_fig = plot_transition_heatmap(transition_matrix)
+            st.plotly_chart(heatmap_fig, use_container_width=True)
+            
+            st.caption(
+                "Transition probabilities show how likely each regime is to persist or change. "
+                "Higher values on the diagonal indicate regime persistence, while off-diagonal values "
+                "show transition likelihoods between different volatility states."
+            )
+        else:
+            st.info("Insufficient data to compute transition matrix.")
         
         st.markdown("---")
         st.caption(f"Data range: {prices.index[0].strftime('%Y-%m-%d')} to {prices.index[-1].strftime('%Y-%m-%d')} | "
