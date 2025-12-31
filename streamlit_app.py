@@ -20,7 +20,7 @@ st.set_page_config(
 )
 
 
-@st.cache_data(ttl=7200)  # Cache for 2 hours to reduce API calls
+@st.cache_data(ttl=21600)  # Cache for 6 hours to minimize API calls and rate limiting
 def load_data(ticker, start_date='2010-01-01', max_retries=3):
     """
     Download price data for the given ticker with retry logic.
@@ -89,7 +89,7 @@ def load_data(ticker, start_date='2010-01-01', max_retries=3):
                         st.error(
                             "⚠️ **Yahoo Finance rate limit reached.**\n\n"
                             "Please wait 1-2 minutes and try again. "
-                            "The app caches data for 1 hour to reduce API calls."
+                            "The app caches data for 6 hours to minimize API calls."
                         )
                     except:
                         pass
@@ -317,6 +317,13 @@ def main():
         help="Number of days for rolling volatility calculation"
     )
     
+    # Manual refresh button
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Refresh Data", help="Clear cache and reload data from Yahoo Finance"):
+        st.cache_data.clear()
+        st.sidebar.success("Cache cleared! Data will be reloaded.")
+        st.rerun()
+    
     # Main content
     st.title("Volatility Regime Analyzer")
     st.markdown("""
@@ -331,10 +338,12 @@ def main():
     """)
     
     # Info about rate limiting
-    with st.expander("ℹ️ About Rate Limiting"):
+    with st.expander("ℹ️ About Rate Limiting & Caching"):
         st.info(
-            "This app uses Yahoo Finance data. If you see rate limit errors, please wait "
-            "1-2 minutes before trying again. Data is cached for 2 hours to minimize API calls."
+            "**Caching:** Data is cached for 6 hours to minimize API calls and reduce rate limiting. "
+            "Use the '🔄 Refresh Data' button in the sidebar to manually reload fresh data.\n\n"
+            "**Rate Limiting:** If you see rate limit errors, please wait 1-2 minutes before trying again. "
+            "The app automatically retries with exponential backoff."
         )
     
     # Load and process data
@@ -356,7 +365,7 @@ def main():
                 "- Rate limiting (please wait 1-2 minutes and try again)\n"
                 "- Invalid ticker symbol\n"
                 "- Network connectivity issues\n\n"
-                "💡 **Tip:** The app caches data for 2 hours. If you just tried multiple tickers, "
+                "💡 **Tip:** The app caches data for 6 hours. If you just tried multiple tickers, "
                 "wait a moment before trying again."
             )
             return
