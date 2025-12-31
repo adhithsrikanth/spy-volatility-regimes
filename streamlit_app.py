@@ -50,11 +50,18 @@ def load_data(ticker, start_date='2010-01-01', max_retries=3):
                 time.sleep(0.5)
             
             ticker_obj = yf.Ticker(ticker)
-            data = ticker_obj.history(start=start_date, progress=False)
+            # Remove progress parameter as it's not supported in all yfinance versions
+            data = ticker_obj.history(start=start_date)
             
             if data.empty:
-                # Try with a shorter period if full history fails
+                # Try with period parameter as fallback
                 if attempt < max_retries - 1:
+                    try:
+                        data = ticker_obj.history(period="5y")
+                        if not data.empty:
+                            return data['Close']
+                    except:
+                        pass
                     continue
                 return None
             
