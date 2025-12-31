@@ -275,9 +275,9 @@ def main():
     st.markdown("""
     This dashboard visualizes market volatility regimes by classifying rolling volatility 
     into three categories:
-    - 🟢 **Low Volatility**: Bottom 33% of volatility distribution
-    - 🟡 **Medium Volatility**: Middle 33%
-    - 🔴 **High Volatility**: Top 33%
+    - **Low Volatility**: Bottom 33% of volatility distribution
+    - **Medium Volatility**: Middle 33%
+    - **High Volatility**: Top 33%
     
     The background shading indicates the current volatility regime, helping identify 
     periods of market stability versus turbulence.
@@ -315,20 +315,17 @@ def main():
         with col1:
             st.metric(
                 "Low Volatility",
-                f"{stats['Low']['count']} days",
-                f"{stats['Low']['percentage']:.1f}%"
+                f"{stats['Low']['count']} days"
             )
         with col2:
             st.metric(
                 "Medium Volatility",
-                f"{stats['Medium']['count']} days",
-                f"{stats['Medium']['percentage']:.1f}%"
+                f"{stats['Medium']['count']} days"
             )
         with col3:
             st.metric(
                 "High Volatility",
-                f"{stats['High']['count']} days",
-                f"{stats['High']['percentage']:.1f}%"
+                f"{stats['High']['count']} days"
             )
         
         fig = plot_regimes(prices, regimes)
