@@ -9,6 +9,8 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
+import time
+from datetime import datetime, timedelta
 
 # Page config must be first Streamlit command
 st.set_page_config(
@@ -18,10 +20,10 @@ st.set_page_config(
 )
 
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_data(ticker, start_date='2010-01-01'):
+@st.cache_data(ttl=7200)  # Cache for 2 hours to reduce API calls
+def load_data(ticker, start_date='2010-01-01', max_retries=3):
     """
-    Download price data for the given ticker.
+    Download price data for the given ticker with retry logic.
     
     Parameters:
     -----------
@@ -29,20 +31,67 @@ def load_data(ticker, start_date='2010-01-01'):
         Stock ticker symbol
     start_date : str
         Start date for data download
+    max_retries : int
+        Maximum number of retry attempts
     
     Returns:
     --------
     pd.Series
         Adjusted close prices indexed by date
     """
-    try:
-        data = yf.Ticker(ticker).history(start=start_date)
-        if data.empty:
-            return None
-        return data['Close']
-    except Exception as e:
-        st.error(f"Error downloading data: {e}")
-        return None
+    for attempt in range(max_retries):
+        try:
+            # Add a small delay to avoid rate limiting
+            if attempt > 0:
+                time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s
+            
+            ticker_obj = yf.Ticker(ticker)
+            data = ticker_obj.history(start=start_date, progress=False)
+            
+            if data.empty:
+                # Try with a shorter period if full history fails
+                if attempt < max_retries - 1:
+                    continue
+                return None
+            
+            return data['Close']
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            
+            # Handle rate limiting specifically
+            if 'rate limit' in error_msg or 'too many requests' in error_msg:
+                if attempt < max_retries - 1:
+                    wait_time = (2 ** attempt) * 5  # Wait 5s, 10s, 20s
+                    # Only show warning on first retry to avoid spam
+                    if attempt == 0:
+                        try:
+                            st.warning(f"⏳ Rate limited. Retrying in {wait_time} seconds...")
+                        except:
+                            pass  # If not in Streamlit context, skip
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    # All retries failed
+                    try:
+                        st.error(
+                            "⚠️ **Yahoo Finance rate limit reached.**\n\n"
+                            "Please wait 1-2 minutes and try again. "
+                            "The app caches data for 1 hour to reduce API calls."
+                        )
+                    except:
+                        pass
+                    return None
+            
+            # Handle other errors (only show on final attempt)
+            if attempt == max_retries - 1:
+                try:
+                    st.error(f"Error downloading data for {ticker}: {str(e)[:100]}")
+                except:
+                    pass
+                return None
+    
+    return None
 
 
 def compute_returns(prices):
@@ -266,13 +315,27 @@ def main():
     periods of market stability versus turbulence.
     """)
     
+    # Info about rate limiting
+    with st.expander("ℹ️ About Rate Limiting"):
+        st.info(
+            "This app uses Yahoo Finance data. If you see rate limit errors, please wait "
+            "1-2 minutes before trying again. Data is cached for 2 hours to minimize API calls."
+        )
+    
     # Load and process data
     if ticker:
         with st.spinner(f"Loading data for {ticker}..."):
             prices = load_data(ticker)
             
             if prices is None or prices.empty:
-                st.error(f"Could not load data for {ticker}. Please check the ticker symbol.")
+                st.error(
+                    f"Could not load data for {ticker}. "
+                    "This could be due to:\n"
+                    "- Rate limiting (please wait a minute and try again)\n"
+                    "- Invalid ticker symbol\n"
+                    "- Network connectivity issues"
+                )
+                st.info("💡 **Tip:** The app caches data for 1 hour. If you just tried multiple tickers, wait a moment before trying again.")
                 return
             
             # Compute metrics
