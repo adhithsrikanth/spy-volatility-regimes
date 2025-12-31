@@ -41,9 +41,13 @@ def load_data(ticker, start_date='2010-01-01', max_retries=3):
     """
     for attempt in range(max_retries):
         try:
-            # Add a small delay to avoid rate limiting
+            # Add delay before each attempt to avoid rate limiting
             if attempt > 0:
-                time.sleep(2 ** attempt)  # Exponential backoff: 2s, 4s, 8s
+                wait_time = (2 ** attempt) * 3  # Exponential backoff: 6s, 12s, 24s
+                time.sleep(wait_time)
+            else:
+                # Small delay even on first attempt to be respectful
+                time.sleep(0.5)
             
             ticker_obj = yf.Ticker(ticker)
             data = ticker_obj.history(start=start_date, progress=False)
@@ -58,9 +62,17 @@ def load_data(ticker, start_date='2010-01-01', max_retries=3):
             
         except Exception as e:
             error_msg = str(e).lower()
+            error_str = str(e)
             
-            # Handle rate limiting specifically
-            if 'rate limit' in error_msg or 'too many requests' in error_msg:
+            # Handle rate limiting specifically - check multiple variations
+            is_rate_limit = (
+                'rate limit' in error_msg or 
+                'too many requests' in error_msg or
+                '429' in error_str or
+                'rate limited' in error_msg
+            )
+            
+            if is_rate_limit:
                 if attempt < max_retries - 1:
                     wait_time = (2 ** attempt) * 5  # Wait 5s, 10s, 20s
                     # Only show warning on first retry to avoid spam
@@ -83,12 +95,15 @@ def load_data(ticker, start_date='2010-01-01', max_retries=3):
                         pass
                     return None
             
-            # Handle other errors (only show on final attempt)
+            # Handle other errors (only show on final attempt, and never for rate limits)
             if attempt == max_retries - 1:
-                try:
-                    st.error(f"Error downloading data for {ticker}: {str(e)[:100]}")
-                except:
-                    pass
+                # Never show raw error messages for rate limits
+                if not is_rate_limit:
+                    try:
+                        st.error(f"Error downloading data for {ticker}: {str(e)[:100]}")
+                    except:
+                        pass
+                # For rate limits, we already showed a user-friendly message above
                 return None
     
     return None
@@ -324,19 +339,27 @@ def main():
     
     # Load and process data
     if ticker:
-        with st.spinner(f"Loading data for {ticker}..."):
-            prices = load_data(ticker)
-            
-            if prices is None or prices.empty:
-                st.error(
-                    f"Could not load data for {ticker}. "
-                    "This could be due to:\n"
-                    "- Rate limiting (please wait a minute and try again)\n"
-                    "- Invalid ticker symbol\n"
-                    "- Network connectivity issues"
-                )
-                st.info("💡 **Tip:** The app caches data for 1 hour. If you just tried multiple tickers, wait a moment before trying again.")
-                return
+        # Use a placeholder to show loading state
+        status_placeholder = st.empty()
+        
+        with status_placeholder.container():
+            with st.spinner(f"Loading data for {ticker}..."):
+                prices = load_data(ticker)
+        
+        # Clear any previous error messages
+        status_placeholder.empty()
+        
+        if prices is None or prices.empty:
+            st.error(
+                f"⚠️ **Could not load data for {ticker}**\n\n"
+                "This could be due to:\n"
+                "- Rate limiting (please wait 1-2 minutes and try again)\n"
+                "- Invalid ticker symbol\n"
+                "- Network connectivity issues\n\n"
+                "💡 **Tip:** The app caches data for 2 hours. If you just tried multiple tickers, "
+                "wait a moment before trying again."
+            )
+            return
             
             # Compute metrics
             returns = compute_returns(prices)
