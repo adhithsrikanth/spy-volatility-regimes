@@ -376,55 +376,55 @@ def main():
                 "wait a moment before trying again."
             )
             return
-            
-            # Compute metrics
-            returns = compute_returns(prices)
-            volatility = compute_volatility(returns, window=window)
-            regimes = classify_regimes(volatility)
-            
-            # Display summary statistics
-            stats = get_regime_stats(regimes)
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric(
-                    "Low Volatility",
-                    f"{stats['Low']['count']} days",
-                    f"{stats['Low']['percentage']:.1f}%"
-                )
-            with col2:
-                st.metric(
-                    "Medium Volatility",
-                    f"{stats['Medium']['count']} days",
-                    f"{stats['Medium']['percentage']:.1f}%"
-                )
-            with col3:
-                st.metric(
-                    "High Volatility",
-                    f"{stats['High']['count']} days",
-                    f"{stats['High']['percentage']:.1f}%"
-                )
-            
-            # Create and display plot
-            fig = plot_regimes(prices, regimes)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Legend
-            st.markdown("---")
-            st.markdown("### Legend")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.markdown("🟢 **Low Volatility**: Bottom 33% of volatility")
-            with col2:
-                st.markdown("🟡 **Medium Volatility**: Middle 33%")
-            with col3:
-                st.markdown("🔴 **High Volatility**: Top 33%")
-            
-            # Data info
-            st.markdown("---")
-            st.caption(f"Data range: {prices.index[0].strftime('%Y-%m-%d')} to {prices.index[-1].strftime('%Y-%m-%d')} | "
-                      f"Total trading days: {len(prices)} | "
-                      f"Rolling window: {window} days")
+        
+        # Compute metrics
+        returns = compute_returns(prices)
+        volatility = compute_volatility(returns, window=window)
+        regimes = classify_regimes(volatility)
+        
+        # Display summary statistics
+        stats = get_regime_stats(regimes)
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric(
+                "Low Volatility",
+                f"{stats['Low']['count']} days",
+                f"{stats['Low']['percentage']:.1f}%"
+            )
+        with col2:
+            st.metric(
+                "Medium Volatility",
+                f"{stats['Medium']['count']} days",
+                f"{stats['Medium']['percentage']:.1f}%"
+            )
+        with col3:
+            st.metric(
+                "High Volatility",
+                f"{stats['High']['count']} days",
+                f"{stats['High']['percentage']:.1f}%"
+            )
+        
+        # Create and display plot
+        fig = plot_regimes(prices, regimes)
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Legend
+        st.markdown("---")
+        st.markdown("### Legend")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.markdown("🟢 **Low Volatility**: Bottom 33% of volatility")
+        with col2:
+            st.markdown("🟡 **Medium Volatility**: Middle 33%")
+        with col3:
+            st.markdown("🔴 **High Volatility**: Top 33%")
+        
+        # Data info
+        st.markdown("---")
+        st.caption(f"Data range: {prices.index[0].strftime('%Y-%m-%d')} to {prices.index[-1].strftime('%Y-%m-%d')} | "
+                  f"Total trading days: {len(prices)} | "
+                  f"Rolling window: {window} days")
 
 
 if __name__ == "__main__":
