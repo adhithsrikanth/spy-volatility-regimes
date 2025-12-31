@@ -399,12 +399,6 @@ def main():
                 f"{stats['High']['percentage']:.1f}%"
             )
         
-        # Note about percentages (they'll always be ~33% due to percentile classification)
-        st.info(
-            f"💡 **Note:** Percentages are always ~33% each because regimes are classified using percentiles "
-            f"(bottom 33%, middle 33%, top 33%). The day counts vary by ticker based on available data."
-        )
-        
         # Create and display plot
         fig = plot_regimes(prices, regimes)
         st.plotly_chart(fig, use_container_width=True)
