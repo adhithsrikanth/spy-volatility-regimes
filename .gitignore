@@ -10,7 +10,8 @@ ENV/
 .venv
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
+.streamlit/credentials.toml
 
 # Outputs
 outputs/*.png
